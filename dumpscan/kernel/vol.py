@@ -16,6 +16,7 @@ from volatility3.framework import (
 from volatility3.plugins.linux.pslist import PsList as NixPsList
 from volatility3.plugins.mac.pslist import PsList as MacPsList
 from volatility3.plugins.windows.pslist import PsList as WinPsList
+from volatility3.plugins.windows.envars import Envars
 
 from .filehandler import DumpscanFileHandler
 from .plugins.dumpcerts import Dumpcerts
@@ -73,7 +74,7 @@ class Volatility:
         results: renderers.TreeGrid = plugin.run()
         return self.render_mode.renderer.render(results)
 
-    def run_kernel_x509(self, pids: List[int], procnames: List[str], dump: bool):
+    def run_x509(self, pids: List[int], procnames: List[str], dump: bool):
         """Runs dumpcerts plugin on a kernel dump
 
         Args:
@@ -86,7 +87,7 @@ class Volatility:
 
         return self._run_plugin(Dumpcerts)
 
-    def run_kernel_symcrypt(self, pids: List[int], procnames: List[str], dump: bool):
+    def run_symcrypt(self, pids: List[int], procnames: List[str], dump: bool):
         """Runs symcrypt plugin on a kernel dump
 
         Args:
@@ -107,3 +108,14 @@ class Volatility:
         """
         pslist_plugin = PSLIST_PLUGINS.get(os)
         return self._run_plugin(pslist_plugin)
+
+    def run_envar(self, pids: List[int]):
+        """Runs envar plugin on a kernel dump
+
+        Args:
+            pids (List[int]): List of pids to filter on
+            silent (bool): Suppress common and non-persistent variables
+        """
+        self.ctx.config["plugins.Envars.pid"] = pids
+
+        return self._run_plugin(Envars)

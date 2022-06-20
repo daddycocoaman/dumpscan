@@ -27,6 +27,26 @@ def lowercase_list(value: List[str]) -> List[str]:
     return list(map(str.lower, value))
 
 
+@kernel_app.command(help="List process environment variables (Only for Windows)")
+def envar(
+    file: Path = typer.Option(..., "--file", "-f", help="Path to kernel dump"),
+    pids: List[int] = typer.Option(
+        [], "--pid", "-p", help="Pids to scan. Can be passed multiple times."
+    ),
+    render: RichRenderOption = typer.Option(
+        RichRenderOption.TABLE,
+        "--render",
+        "-r",
+        help="Render output (default: table)",
+        case_sensitive=False,
+        show_default=False,
+    ),
+):
+    vol = Volatility(file, render, None)
+    results = vol.run_envar(list(pids))
+    console.print(results)
+
+
 @kernel_app.command(help="List all the processes and their command line arguments")
 def pslist(
     file: Path = typer.Option(..., "--file", "-f", help="Path to kernel dump"),
@@ -78,7 +98,7 @@ def kernel_x509(
     ),
 ):
     vol = Volatility(file, render, output)
-    results = vol.run_kernel_x509(list(pids), list(procnames), bool(output))
+    results = vol.run_x509(list(pids), list(procnames), bool(output))
     console.print(results)
 
 
@@ -112,7 +132,7 @@ def kernel_symcrypt(
     ),
 ):
     vol = Volatility(file, render, output)
-    results = vol.run_kernel_symcrypt(list(pids), list(procnames), bool(output))
+    results = vol.run_symcrypt(list(pids), list(procnames), bool(output))
     console.print(results)
 
 
