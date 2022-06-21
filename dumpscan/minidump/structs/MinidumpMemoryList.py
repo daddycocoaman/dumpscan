@@ -1,5 +1,4 @@
-import construct
-from construct import IfThenElse, Int32ul, Int64ul, Pointer, Struct, Timestamp, this
+from construct import IfThenElse, Int32ul, Int64ul, Struct, this
 
 from .common import MINIDUMP_LOCATION_DESCRIPTOR, MINIDUMP_LOCATION_DESCRIPTOR_64
 
@@ -17,8 +16,6 @@ MINIDUMP_MEMORY_DESCRIPTOR = Struct(
 MINIDUMP_MEMORY_LIST = Struct(
     "NumberOfMemoryRanges" / Int32ul,
     # "MemoryRanges"
-    # / Pointer(
-    #     this._.Location.Rva,
-    #     construct.Array(this.NumberOfMemoryRanges, MINIDUMP_MEMORY_DESCRIPTOR),
-    # ),
+    # / (MINIDUMP_MEMORY_DESCRIPTOR)[this.NumberOfMemoryRanges]
+    # * _track_rva_addr,
 )

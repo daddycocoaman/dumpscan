@@ -5,7 +5,7 @@ import typer
 from rich import inspect
 from rich_click.typer import Typer
 
-from .common.output import get_dumpscan_console
+from .common.output import get_dumpscan_console, get_dumpscan_table
 from .common.scanners.symcrypt import SymcryptScanner
 from .common.scanners.x509 import x509Scanner
 from .kernel.renderers import RichRenderOption
@@ -27,8 +27,10 @@ def lowercase_list(value: List[str]) -> List[str]:
     return list(map(str.lower, value))
 
 
-@kernel_app.command(help="List process environment variables (Only for Windows)")
-def envar(
+@kernel_app.command(
+    name="envar", help="List process environment variables (Only for Windows)"
+)
+def kernel_envar(
     file: Path = typer.Option(..., "--file", "-f", help="Path to kernel dump"),
     pids: List[int] = typer.Option(
         [], "--pid", "-p", help="Pids to scan. Can be passed multiple times."
@@ -47,8 +49,32 @@ def envar(
     console.print(results)
 
 
-@kernel_app.command(help="List all the processes and their command line arguments")
-def pslist(
+@kernel_app.command(
+    name="cmdline", help="List command line for processes (Only for Windows)"
+)
+def kernel_cmdline(
+    file: Path = typer.Option(..., "--file", "-f", help="Path to kernel dump"),
+    pids: List[int] = typer.Option(
+        [], "--pid", "-p", help="Pids to scan. Can be passed multiple times."
+    ),
+    render: RichRenderOption = typer.Option(
+        RichRenderOption.TABLE,
+        "--render",
+        "-r",
+        help="Render output (default: table)",
+        case_sensitive=False,
+        show_default=False,
+    ),
+):
+    vol = Volatility(file, render, None)
+    results = vol.run_cmdline(list(pids))
+    console.print(results)
+
+
+@kernel_app.command(
+    name="pslist", help="List all the processes and their command line arguments"
+)
+def kernel_pslist(
     file: Path = typer.Option(..., "--file", "-f", help="Path to kernel dump"),
     os: OS = typer.Option(
         OS.WINDOWS,
@@ -136,7 +162,7 @@ def kernel_symcrypt(
     console.print(results)
 
 
-@minidump_app.command(name="x509")
+@minidump_app.command(name="x509", help="Scan a minidump for x509 objects")
 def minidump_x509(
     file: Path = typer.Option(
         ..., "--file", "-f", help="Path to minidump", dir_okay=False
@@ -148,7 +174,7 @@ def minidump_x509(
     console.print(scanner)
 
 
-@minidump_app.command(name="symcrypt")
+@minidump_app.command(name="symcrypt", help="Scan a minidump for symcrypt objects")
 def minidump_symcrypt(
     file: Path = typer.Option(
         ..., "--file", "-f", help="Path to kernel dump", dir_okay=False
@@ -162,6 +188,40 @@ def minidump_symcrypt(
     # Now look for symcrypt
     symcrypt_scanner = SymcryptScanner.minidump_scan(minidump_file, x509_scanner)
     console.print(symcrypt_scanner)
+
+
+@minidump_app.command(name="envar", help="Dump the environment variables in a minidump")
+def minidump_envar(
+    file: Path = typer.Option(
+        ..., "--file", "-f", help="Path to kernel dump", dir_okay=False
+    ),
+):
+    # Get all the public certs first
+    minidump_file = MinidumpFile(file.absolute())
+    # print(minidump_file.dump)
+
+    envars = minidump_file.get_envars()
+    table = get_dumpscan_table()
+    table.add_column("Variable", style="italic #f9c300")
+    table.add_column("Value")
+    [table.add_row(k, v) for k, v in envars.items()]
+    console.print(table, highlight=False)
+
+
+@minidump_app.command(name="cmdline", help="Dump the command line string")
+def minidump_cmdline(
+    file: Path = typer.Option(
+        ..., "--file", "-f", help="Path to kernel dump", dir_okay=False
+    ),
+):
+    # Get all the public certs first
+    minidump_file = MinidumpFile(file.absolute())
+    console.print(
+        minidump_file.get_commandline(),
+        "\n",
+        style="#f9c300",
+        highlight=False,
+    )
 
 
 if __name__ == "__main__":

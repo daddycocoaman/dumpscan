@@ -42,9 +42,9 @@ class SymcryptScanner:
 
         # RSA key results
         table = get_dumpscan_table()
-        table.add_column("Rule")
+        table.add_column("Rule", style="bold italic #f9c300")
         table.add_column("HasPrivateKey")
-        table.add_column("Modulus (First 20 bytes)")
+        table.add_column("Modulus (First 20 bytes)", style="bold #f9c300")
         table.add_column("Matching Certificate")
         for result in self.matching_objects.get("rsa", []):
             table.add_row("rsa", *map(str, asdict(result).values()))

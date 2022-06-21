@@ -16,12 +16,14 @@ from volatility3.framework import (
 from volatility3.plugins.linux.pslist import PsList as NixPsList
 from volatility3.plugins.mac.pslist import PsList as MacPsList
 from volatility3.plugins.windows.pslist import PsList as WinPsList
-from volatility3.plugins.windows.envars import Envars
 
 from .filehandler import DumpscanFileHandler
 from .plugins.dumpcerts import Dumpcerts
 from .plugins.symcrypt import Symcrypt
 from .renderers import RichRenderOption
+
+from volatility3.plugins.windows.envars import Envars  # isort: skip
+from volatility3.plugins.windows.cmdline import CmdLine
 
 log = logging.getLogger("rich")
 
@@ -114,8 +116,17 @@ class Volatility:
 
         Args:
             pids (List[int]): List of pids to filter on
-            silent (bool): Suppress common and non-persistent variables
         """
         self.ctx.config["plugins.Envars.pid"] = pids
 
         return self._run_plugin(Envars)
+
+    def run_cmdline(self, pids: List[int]):
+        """Runs cmdline plugin on a kernel dump
+
+        Args:
+            pids (List[int]): List of pids to filter on
+        """
+        self.ctx.config["plugins.CmdLine.pid"] = pids
+
+        return self._run_plugin(CmdLine)
