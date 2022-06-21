@@ -38,7 +38,7 @@ class x509Scanner:
 
         table = get_dumpscan_table()
         table.add_column("Rule", style="bold #f9c300")
-        table.add_column("Result")
+        table.add_column("Result", style="#008df8")
         table.add_column("Thumbprint", style="#008df8")
         table.add_column("Public Integers (First 20 bytes)")
 
