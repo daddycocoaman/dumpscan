@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "dumpscan"
+version = "0.1.0"
+description = "Scanning memory dumps for secrets using volatility and yara"
+authors = ["Leron Gray <daddycocoaman@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typer = "^0.4.1"
+rich = "^12.3.0"
+yara-python = ">=3.8.0"
+cryptography = "^37.0.2"
+cffi = "^1.15.0"
+construct = "^2.10.68"
+rich-click = {extras = ["typer"], version = "^1.4"}
+pycryptodome = "^3.14.1"
+jsonschema = "^4.5.1"
+capstone = "^5.0.0rc2"
+arrow = "^1.2.2"
+pefile = "^2022.5.30"
+
+[tool.poetry.group.dev.dependencies]
+isort = "^5.10.1"
+black = "^22.3.0"
+volatility3 = {git = "https://github.com/volatilityfoundation/volatility3", rev = "develop"}
+
+[tool.poetry.scripts]
+dumpscan = "dumpscan.main:app"
+
+[tool.isort]
+profile = "black"
+
+[build-system]
+requires = ["poetry-core>=1.1.0a6"]
+build-backend = "poetry.core.masonry.api"
