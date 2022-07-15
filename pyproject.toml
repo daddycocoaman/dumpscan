@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dumpscan"
-version = "0.1.0"
+version = "0.1.1"
 description = "Scanning memory dumps for secrets using volatility and yara"
 authors = ["Leron Gray <daddycocoaman@gmail.com>"]
 license = "MIT"
