@@ -1,6 +1,5 @@
 import binascii
 from base64 import b64encode
-from collections import defaultdict
 from pathlib import Path
 from struct import unpack
 
@@ -34,7 +33,7 @@ class x509Scanner:
         self.rules = yara.compile(sources=YARA_RULES["x509"])
         self.dump = minidumpfile
         self.output = output
-        self.matching_objects = defaultdict(list)
+        self.matching_objects = {"x509": [], "pkcs": []}
         self.modulus_dict = {}
         self.public_private_matches = {}
         self.current_section: MINIDUMP_MEMORY_DESCRIPTOR64 = None
@@ -116,7 +115,7 @@ class x509Scanner:
             )
 
         scanner.modulus_dict = {}
-        for cert in scanner.matching_objects.get("x509"):
+        for cert in scanner.matching_objects.get("x509", []):
             public_key = cert.public_key()
 
             if isinstance(public_key, RSAPublicKey):
