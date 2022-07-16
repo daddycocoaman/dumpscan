@@ -1,8 +1,8 @@
 from rich import box
 from rich.console import Console
+from rich.style import Style
 from rich.table import Table
 from rich.theme import Theme
-from rich.style import Style
 
 theme = Theme(
     {

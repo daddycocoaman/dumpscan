@@ -5,7 +5,7 @@ from typing import Dict, Generator, Tuple, TypeVar
 
 import construct
 import yara
-from construct import RepeatUntil, Seek, Struct, this, CString, Array
+from construct import Array, CString, RepeatUntil, Seek, Struct, this
 
 from dumpscan.minidump.structs.MinidumpThreadList import (
     MINIDUMP_PEB,

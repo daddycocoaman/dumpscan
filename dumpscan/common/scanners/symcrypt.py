@@ -3,6 +3,8 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from struct import unpack
+
+import yara
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.rsa import (
     RSAPrivateNumbers,
@@ -12,16 +14,14 @@ from cryptography.hazmat.primitives.asymmetric.rsa import (
     rsa_crt_iqmp,
     rsa_recover_prime_factors,
 )
-from cryptography.hazmat.primitives.serialization.pkcs12 import (
-    serialize_key_and_certificates,
-)
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
     NoEncryption,
     PrivateFormat,
 )
-
-import yara
+from cryptography.hazmat.primitives.serialization.pkcs12 import (
+    serialize_key_and_certificates,
+)
 from rich import inspect
 from rich.console import Console, ConsoleOptions, RenderResult
 

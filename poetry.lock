@@ -163,6 +163,14 @@ format = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validat
 format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3986-validator (>0.1.0)", "uri-template", "webcolors (>=1.11)"]
 
 [[package]]
+name = "minidump"
+version = "0.0.21"
+description = "Python library to parse Windows minidump file format"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "mypy-extensions"
 version = "0.4.3"
 description = "Experimental type system extensions for programs checked with the mypy typechecker."
@@ -319,7 +327,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "volatility3"
-version = "2.2.0"
+version = "2.3.0"
 description = "Memory forensics framework"
 category = "dev"
 optional = false
@@ -333,7 +341,7 @@ pefile = ">=2017.8.1"
 type = "git"
 url = "https://github.com/volatilityfoundation/volatility3"
 reference = "develop"
-resolved_reference = "39e812a207b7c2de61bf74549c2b60e534c86497"
+resolved_reference = "84d26ba4bdf46b0280b343b3bd3c3b7ee54238c8"
 
 [[package]]
 name = "yara-python"
@@ -346,7 +354,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "79b947b53b42668f10169ade223946c87fa00ab4c0b783c560b865eafa9eb93d"
+content-hash = "e06c35cf9af74a5c927c057aec16737556f00b39a15a616233fc56b7818ed89c"
 
 [metadata.files]
 arrow = [
@@ -493,6 +501,10 @@ isort = [
 jsonschema = [
     {file = "jsonschema-4.6.0-py3-none-any.whl", hash = "sha256:1c92d2db1900b668201f1797887d66453ab1fbfea51df8e4b46236689c427baf"},
     {file = "jsonschema-4.6.0.tar.gz", hash = "sha256:9d6397ba4a6c0bf0300736057f649e3e12ecbc07d3e81a0dacb72de4e9801957"},
+]
+minidump = [
+    {file = "minidump-0.0.21-py3-none-any.whl", hash = "sha256:6a9d2152f76ae633c609e09b48b42f55bd5a6b65f920dbbec756e5d9134a6201"},
+    {file = "minidump-0.0.21.tar.gz", hash = "sha256:83d612afb6c57727ebf38aca433b550f83f9f8c7c3b6562ad2ab97071fd85f3a"},
 ]
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},

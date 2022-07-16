@@ -1,26 +1,35 @@
 import binascii
-from base64 import b64encode
 from pathlib import Path
 from struct import unpack
 
 import yara
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric.dsa import DSAPrivateKey, DSAPublicKey
 from cryptography.hazmat.primitives.asymmetric.ec import (
     EllipticCurvePrivateKey,
     EllipticCurvePublicKey,
 )
+from cryptography.hazmat.primitives.asymmetric.ed448 import (
+    Ed448PrivateKey,
+    Ed448PublicKey,
+)
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey, RSAPublicKey
 from cryptography.hazmat.primitives.serialization import (
-    load_pem_private_key,
     Encoding,
     NoEncryption,
     PrivateFormat,
+    load_der_private_key,
 )
 from cryptography.x509 import Certificate, load_der_x509_certificate
-from rich import inspect
+from rich import inspect, print
 from rich.console import Console, ConsoleOptions, RenderResult
-from rich.table import Table
+
+from dumpscan.common.scanners.utils import format_thumbprint
 
 from ...minidump.minidumpfile import MinidumpFile
 from ...minidump.structs.MinidumpMemory64List import MINIDUMP_MEMORY_DESCRIPTOR64
@@ -47,54 +56,121 @@ class x509Scanner:
 
         table = get_dumpscan_table()
         table.add_column("Rule", style="bold #f9c300")
+        table.add_column("Type", style="bold #f9c300")
         table.add_column("Result", style="#008df8")
         table.add_column("Thumbprint", style="#008df8")
-        table.add_column("Public Integers (First 20 bytes)")
+        table.add_column("Public Ints (20 bytes) || Matching Cert")
 
-        for key, values in self.matching_objects.items():
-            found_certs = []
-            for value in values:
-                if isinstance(value, Certificate):
-                    thumbprint = (
-                        binascii.hexlify(value.fingerprint(hashes.SHA1()))
-                        .upper()
-                        .decode()
+        found_certs = set()
+
+        for value in self.matching_objects.get("x509"):
+            thumbprint = None
+
+            thumbprint = format_thumbprint(value)
+
+            # Clean up output by only printing unique certs
+            if thumbprint in found_certs:
+                continue
+            found_certs.add(thumbprint)
+
+            public_key = value.public_key()
+            key_type = ""
+            if isinstance(public_key, RSAPublicKey):
+                pubints = (
+                    "N: " + format(public_key.public_numbers().n, "x")[:40].upper()
+                )
+                key_type = "RSA"
+
+            elif isinstance(public_key, EllipticCurvePublicKey):
+                pubints = f"X: {str(public_key.public_numbers().x)[:40]} | Y: {str(public_key.public_numbers().y)[:40]} "
+                key_type = "ECC"
+
+            elif isinstance(public_key, DSAPublicKey):
+                pubints = (
+                    "Y: " + format(public_key.public_numbers().y, "x")[:40].upper()
+                )
+                key_type = "DSA"
+            elif isinstance(public_key, Ed448PublicKey):
+                pubints = ""
+                key_type = "Ed448"
+            elif isinstance(public_key, Ed25519PublicKey):
+                pubints = ""
+                key_type = "Ed25519"
+
+            table.add_row(
+                "x509",
+                key_type,
+                value.subject.rfc4514_string(),
+                thumbprint,
+                pubints,
+            )
+
+        for value in self.matching_objects.get("pkcs"):
+            rule = "pkcs"
+
+            if isinstance(value, RSAPrivateKey):
+                result = str(value.key_size)
+                thumbprint, cert_subject = self.match_priv_pub_ints(
+                    format(value.private_numbers().public_numbers.n, "x").upper()
+                )
+
+                table.add_row(rule, "RSA", result, thumbprint, cert_subject)
+
+            elif isinstance(value, DSAPrivateKey):
+                result = str(value.key_size)
+                thumbprint, cert_subject = self.match_priv_pub_ints(
+                    format(value.private_numbers().public_numbers.y, "x").upper()
+                )
+                table.add_row(rule, "DSA", result, thumbprint, cert_subject)
+
+            elif isinstance(value, EllipticCurvePrivateKey):
+                result = str(value.key_size)
+                thumbprint, cert_subject = self.match_priv_pub_ints(
+                    (
+                        format(value.private_numbers().public_numbers.x, "x").upper(),
+                        format(value.private_numbers().public_numbers.y, "x").upper(),
                     )
+                )
+                table.add_row(rule, "ECC", result, thumbprint, cert_subject)
+            elif isinstance(value, Ed448PrivateKey):
+                thumbprint, cert_subject = self.match_by_verify(value)
 
-                    # Clean up output by only printing unique certs
-                    if thumbprint in found_certs:
-                        continue
-                    found_certs.append(thumbprint)
+                # Key is always 57 bytes
+                table.add_row(rule, "Ed448", "57", thumbprint, cert_subject)
+            elif isinstance(value, Ed25519PrivateKey):
+                thumbprint, cert_subject = self.match_by_verify(value)
 
-                    public_key = value.public_key()
-
-                    if isinstance(public_key, RSAPublicKey):
-                        pubints = format(public_key.public_numbers().n, "x")[
-                            :40
-                        ].upper()
-
-                    elif isinstance(public_key, EllipticCurvePublicKey):
-                        pubints = f"X:{str(public_key.public_numbers().x)[:40]} | Y:{str(public_key.public_numbers().y)[:40]} "
-
-                    table.add_row(
-                        key,
-                        value.subject.rfc4514_string(),
-                        thumbprint,
-                        pubints,
-                    )
-                elif isinstance(value, RSAPrivateKey):
-                    result = str(value.key_size)
-                    if matching_cert := self.public_private_matches.get(value):
-                        result += f"-> {matching_cert.subject.rfc4514_string()}"
-                    table.add_row(
-                        key,
-                        result,
-                        None,
-                        format(value.private_numbers().public_numbers.n, "x")[
-                            :40
-                        ].upper(),
-                    )
+                # Key is always 32 bytes
+                table.add_row(rule, "Ed25519", "32", thumbprint, cert_subject)
         yield table
+
+    def match_by_verify(
+        self, private_key: Ed448PrivateKey | Ed25519PrivateKey
+    ) -> tuple[str, str]:
+
+        data = b"dumpscan_verify"
+        signature = private_key.sign(data)
+
+        for cert in self.matching_objects.get("x509"):
+            if (
+                cert.public_key().__class__.__name__
+                == private_key.public_key().__class__.__name__
+            ):
+                try:
+                    cert.public_key().verify(signature, data)
+                    return format_thumbprint(cert), cert.subject.rfc4514_string()
+                except:
+                    pass
+
+        return None, None
+
+    def match_priv_pub_ints(self, pubints: str | tuple[str, ...]) -> tuple[str, str]:
+        if matching_cert := self.modulus_dict.get(pubints):
+            return (
+                format_thumbprint(matching_cert),
+                matching_cert.subject.rfc4514_string(),
+            )
+        return None, None
 
     def save_file(self, data: bytes, filename: str):
         if self.output:
@@ -117,19 +193,42 @@ class x509Scanner:
         scanner.modulus_dict = {}
         for cert in scanner.matching_objects.get("x509", []):
             public_key = cert.public_key()
+            public_int = None
 
             if isinstance(public_key, RSAPublicKey):
-                pub_modulus_str = format(public_key.public_numbers().n, "x").upper()
-                scanner.modulus_dict[pub_modulus_str] = cert
+                public_int = format(public_key.public_numbers().n, "x").upper()
+            elif isinstance(public_key, EllipticCurvePublicKey):
+                public_int = (
+                    format(public_key.public_numbers().x, "x").upper(),
+                    format(public_key.public_numbers().y, "x").upper(),
+                )
+            elif isinstance(public_key, DSAPublicKey):
+                public_int = format(public_key.public_numbers().y, "x").upper()
+
+            if public_int:
+                scanner.modulus_dict[public_int] = cert
 
         if private_keys := scanner.matching_objects.get("pkcs"):
             for private_key in private_keys:
-                priv_modulus_str = format(
-                    private_key.private_numbers().public_numbers.n, "x"
-                )
+                priv_str = None
 
-                if match := scanner.modulus_dict.get(priv_modulus_str):
-                    scanner.public_private_matches[private_key, match]
+                if isinstance(private_key, RSAPrivateKey):
+                    priv_str = format(
+                        private_key.private_numbers().public_numbers.n, "x"
+                    )
+                elif isinstance(private_key, EllipticCurvePrivateKey):
+                    priv_str = (
+                        format(private_key.private_numbers().public_numbers.x, "x"),
+                        format(private_key.private_numbers().public_numbers.y, "x"),
+                    )
+                elif isinstance(private_key, DSAPrivateKey):
+                    priv_str = format(
+                        private_key.private_numbers().public_numbers.y, "x"
+                    )
+
+                if priv_str:
+                    if match := scanner.modulus_dict.get(priv_str):
+                        scanner.public_private_matches[private_key, match]
 
         return scanner
 
@@ -171,14 +270,50 @@ class x509Scanner:
         self.matching_objects[rule].extend(matching_objects)
         return yara.CALLBACK_CONTINUE
 
-    def parse_results(self, match: tuple, rule: str):
+    def parse_results(self, yara_match: tuple, rule: str):
 
         # This is the offset from the bytes being scanned
-        offset = match[0]
+        offset, _, match = yara_match
 
-        # Only need first four bytes
-        _, cert_size = unpack(">HH", match[2][:4])
-        cert_data = self.dump.read_section(self.current_section, offset, cert_size + 4)
+        # The last digit of the sequence tag is the number of bytes that represent the cert size
+        # But if the sequence tag is only 0x30, then the next byte is the cert size
+        # To determine, we need to check the split distance of 0x30 to 020100 for pkcs
+        if rule == "x509":
+            sequence_tag_byte_len = int(binascii.hexlify(match[:2]).decode()[-1])
+        elif rule == "pkcs":
+            sequence_tag_byte_len = match.index(b"\x02\x01") // 2
+
+        # Assuming no cert size is ever larger than 65535. Right?
+        unpack_str = ">B" if sequence_tag_byte_len == 1 else ">H"
+
+        # Need to grab the correct bytes that represent the cert size
+        if sequence_tag_byte_len == 1 and rule == "pkcs":
+            cert_size = int(match[match.index(b"\x02\x01") - 1])
+        else:
+            cert_size = unpack(
+                unpack_str,
+                match[2 : 2 + sequence_tag_byte_len],
+            )[0]
+
+        total_size = cert_size + sequence_tag_byte_len + 2
+
+        # if rule == "pkcs":
+        #     print(
+        #         binascii.hexlify(match),
+        #         match.index(b"\x02\x01"),
+        #         sequence_tag_byte_len,
+        #         cert_size,
+        #     )
+
+        cert_data = self.dump.read_section(self.current_section, offset, total_size)
+        # if rule == "pkcs" and cert_size < 400:
+        #     print(
+        #         binascii.hexlify(match),
+        #         match.index(b"\x02\x01"),
+        #         sequence_tag_byte_len,
+        #         cert_size,
+        #         binascii.hexlify(cert_data),
+        #     )
 
         if rule == "x509":
             try:
@@ -186,12 +321,7 @@ class x509Scanner:
             except:
                 pass
         elif rule == "pkcs":
-            pem = (
-                b"-----BEGIN RSA PRIVATE KEY-----\n"
-                + b64encode(cert_data)
-                + b"\n-----END RSA PRIVATE KEY-----"
-            )
             try:
-                return load_pem_private_key(pem, None, default_backend())
+                return load_der_private_key(cert_data, None, default_backend())
             except:
                 pass

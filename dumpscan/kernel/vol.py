@@ -15,6 +15,7 @@ from volatility3.framework import (
 )
 from volatility3.plugins.linux.pslist import PsList as NixPsList
 from volatility3.plugins.mac.pslist import PsList as MacPsList
+from volatility3.plugins.windows.cmdline import CmdLine
 from volatility3.plugins.windows.pslist import PsList as WinPsList
 
 from .filehandler import DumpscanFileHandler
@@ -23,7 +24,6 @@ from .plugins.symcrypt import Symcrypt
 from .renderers import RichRenderOption
 
 from volatility3.plugins.windows.envars import Envars  # isort: skip
-from volatility3.plugins.windows.cmdline import CmdLine
 
 log = logging.getLogger("rich")
 

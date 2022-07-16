@@ -5,8 +5,8 @@ from .common import (
     MINIDUMP_LOCATION_DESCRIPTOR_64,
     UNICODE_STRING,
 )
-from .MinidumpMemoryList import MINIDUMP_MEMORY_DESCRIPTOR
 from .MinidumpMemory64List import MINIDUMP_MEMORY_DESCRIPTOR64
+from .MinidumpMemoryList import MINIDUMP_MEMORY_DESCRIPTOR
 
 MINIDUMP_PEB = Struct("Padding" / Padding(0x20), "ProcessParameters" / Hex(Int64ul))
 MINIDUMP_TEB = Struct("Padding" / Padding(0x60), "PEB" / Hex(Int64ul))

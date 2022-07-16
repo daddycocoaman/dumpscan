@@ -25,6 +25,7 @@ pefile = "^2022.5.30"
 isort = "^5.10.1"
 black = "^22.3.0"
 volatility3 = {git = "https://github.com/volatilityfoundation/volatility3", rev = "develop"}
+minidump = "^0.0.21"
 
 [tool.poetry.scripts]
 dumpscan = "dumpscan.main:app"
