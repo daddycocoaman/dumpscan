@@ -75,6 +75,7 @@ class x509Scanner:
 
             public_key = value.public_key()
             key_type = ""
+
             if isinstance(public_key, RSAPublicKey):
                 pubints = (
                     "N: " + format(public_key.public_numbers().n, "x")[:40].upper()
@@ -82,7 +83,7 @@ class x509Scanner:
                 key_type = "RSA"
 
             elif isinstance(public_key, EllipticCurvePublicKey):
-                pubints = f"X: {str(public_key.public_numbers().x)[:40]} | Y: {str(public_key.public_numbers().y)[:40]} "
+                pubints = f"X: {format(public_key.public_numbers().x, 'x')[:40].upper()} | Y: {format(public_key.public_numbers().y, 'x')[:40].upper()}"
                 key_type = "ECC"
 
             elif isinstance(public_key, DSAPublicKey):
@@ -105,7 +106,15 @@ class x509Scanner:
                 pubints,
             )
 
+        found_keys = []
         for value in self.matching_objects.get("pkcs"):
+
+            if hasattr(value, "private_numbers"):
+                private_numbers = value.private_numbers()
+                if value.private_numbers() in found_keys:
+                    continue
+                found_keys.append(private_numbers)
+
             rule = "pkcs"
 
             if isinstance(value, RSAPrivateKey):

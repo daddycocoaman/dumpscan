@@ -3,7 +3,6 @@ from typing import List
 
 import typer
 from rich import inspect
-from rich_click.typer import Typer
 
 from .common.output import get_dumpscan_console, get_dumpscan_table
 from .common.scanners.symcrypt import SymcryptScanner
@@ -12,11 +11,11 @@ from .kernel.renderers import RichRenderOption
 from .kernel.vol import OS, Volatility
 from .minidump.minidumpfile import MinidumpFile
 
-app = Typer(
+app = typer.Typer(
     name="dumpscan", help="Scan memory dumps for secrets and keys", add_completion=False
 )
-kernel_app = Typer()
-minidump_app = Typer()
+kernel_app = typer.Typer()
+minidump_app = typer.Typer()
 app.add_typer(kernel_app, name="kernel", help="Scan kernel dump using volatility")
 app.add_typer(minidump_app, name="minidump", help="Scan a user-mode minidump")
 console = get_dumpscan_console()

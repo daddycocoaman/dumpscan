@@ -1,7 +1,7 @@
 import logging
 import warnings
 
-import rich_click as click
+from typer import rich_utils
 from cryptography.utils import CryptographyDeprecationWarning
 from rich import traceback
 from rich.logging import RichHandler
@@ -16,23 +16,23 @@ logging.basicConfig(
     handlers=[RichHandler(rich_tracebacks=True, show_path=False, show_time=False)],
 )
 
-# ***** RICH CLICK STYLE *****
-click.rich_click.MAX_WIDTH = 100
-# click.rich_click.USE_RICH_MARKUP = True
-click.rich_click.USE_MARKDOWN = True
-click.rich_click.SHOW_METAVARS_COLUMN = True
-click.rich_click.APPEND_METAVARS_HELP = False
+# ***** TYPER RICH STYLE *****
+rich_utils.MAX_WIDTH = 100
+# rich_utils.USE_RICH_MARKUP = True
+rich_utils.USE_MARKDOWN = True
+rich_utils.SHOW_METAVARS_COLUMN = True
+rich_utils.APPEND_METAVARS_HELP = False
 
-click.rich_click.STYLE_HELPTEXT_FIRST_LINE = "#d24a00"
+rich_utils.STYLE_HELPTEXT_FIRST_LINE = "#d24a00"
 
-click.rich_click.STYLE_OPTION = "#f9c300"
-click.rich_click.STYLE_OPTIONS_TABLE_BOX = "SIMPLE"
-click.rich_click.STYLE_OPTIONS_PANEL_BORDER = "bold #0084a8"
-click.rich_click.STYLE_OPTIONS_TABLE_ROW_STYLES = ["#f9c300"]
+rich_utils.STYLE_OPTION = "#f9c300"
+rich_utils.STYLE_OPTIONS_TABLE_BOX = "SIMPLE"
+rich_utils.STYLE_OPTIONS_PANEL_BORDER = "bold #0084a8"
+rich_utils.STYLE_OPTIONS_TABLE_ROW_STYLES = ["#f9c300"]
 
-click.rich_click.STYLE_COMMANDS_TABLE_BOX = "SIMPLE"
-click.rich_click.STYLE_COMMANDS_PANEL_BORDER = "bold #0084a8"
-click.rich_click.STYLE_COMMANDS_TABLE_ROW_STYLES = ["#f9c300"]
+rich_utils.STYLE_COMMANDS_TABLE_BOX = "SIMPLE"
+rich_utils.STYLE_COMMANDS_PANEL_BORDER = "bold #0084a8"
+rich_utils.STYLE_COMMANDS_TABLE_ROW_STYLES = ["#f9c300"]
 
-click.rich_click.STYLE_USAGE = "bold #0084a8"
-click.rich_click.STYLE_USAGE_COMMAND = "#d24a00 italic"
+rich_utils.STYLE_USAGE = "bold #0084a8"
+rich_utils.STYLE_USAGE_COMMAND = "#d24a00 italic"

@@ -8,6 +8,8 @@ YARA_RULES = {
     },
     # Locate RSA structs following "MSRK" magic header
     "symcrypt": {
-        "rsa": yara_template.format("symcrypt_rsa", "{28 00 00 00 4b 52 53 4d}"),
+        "rsa": yara_template.format(
+            "symcrypt_rsa", "{28 00 00 00 4b 52 53 4d ?? ?? ?? ??}"
+        ),
     },
 }
