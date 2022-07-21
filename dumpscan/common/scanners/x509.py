@@ -201,7 +201,11 @@ class x509Scanner:
 
         scanner.modulus_dict = {}
         for cert in scanner.matching_objects.get("x509", []):
-            public_key = cert.public_key()
+            try:
+                public_key = cert.public_key()
+            except:
+                inspect(cert, all=True)
+                continue
             public_int = None
 
             if isinstance(public_key, RSAPublicKey):

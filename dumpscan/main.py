@@ -175,6 +175,20 @@ def minidump_x509(
     console.print(scanner)
 
 
+# @minidump_app.command(name="bcrypt", help="Scan a minidump for BCrypt objects")
+# def minidump_bcrypt(
+#     file: Path = typer.Option(
+#         ..., "--file", "-f", help="Path to minidump", dir_okay=False
+#     ),
+#     output: Path = typer.Option(
+#         None, "--output", "-o", help="Path to dump objects to disk", file_okay=False
+#     ),
+# ):
+#     minidump_file = MinidumpFile(file.absolute())
+#     scanner = x509Scanner.minidump_scan(minidump_file, output)
+#     console.print(scanner)
+
+
 @minidump_app.command(name="symcrypt", help="Scan a minidump for symcrypt objects")
 def minidump_symcrypt(
     file: Path = typer.Option(

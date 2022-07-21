@@ -89,7 +89,6 @@ def generate_rsa_keypair_and_certificate():
 
 def generate_dsa_keypair_and_certificate():
     os_dsa_public, os_dsa_private = asymmetric.generate_pair("dsa", 2048)
-
     dsa_private_key = serialization.load_pem_private_key(
         asymmetric.dump_private_key(os_dsa_private.asn1, None),
         None,
@@ -100,7 +99,14 @@ def generate_dsa_keypair_and_certificate():
     )
 
     dsa_certificate = create_certificate(dsa_private_key, dsa_public_key)
-    return dsa_certificate, dsa_private_key, dsa_public_key
+    dump("python_postdsa_3072.dmp")
+    return (
+        dsa_certificate,
+        dsa_private_key,
+        dsa_public_key,
+        os_dsa_private,
+        os_dsa_public,
+    )
 
 
 def generate_ecc_keypair_and_certificate():
@@ -116,7 +122,13 @@ def generate_ecc_keypair_and_certificate():
     )
 
     ecc_certificate = create_certificate(ecc_private_key, ecc_public_key)
-    return ecc_certificate, ecc_private_key, ecc_public_key
+    return (
+        ecc_certificate,
+        ecc_private_key,
+        ecc_public_key,
+        os_ecc_private,
+        os_ecc_public,
+    )
 
 
 def generate_ed25519_keypair_and_certificate():
@@ -139,13 +151,31 @@ def get_thumbprint(certificate: Certificate) -> str:
     return hexlify(certificate.fingerprint(hashes.SHA1())).decode().upper()
 
 
+def dsa_summary(dsa_private_key: dsa.DSAPrivateKey):
+    public_numbers = dsa_private_key.public_key().public_numbers()
+    param_numbers = dsa_private_key.public_key().parameters().parameter_numbers()
+    print(dsa_public.public_numbers())
+
+    q_hex = format(param_numbers.q, "x").upper()
+    print("\n[green]Q: Expected value[/]", len(q_hex) // 2, q_hex, param_numbers.q)
+
+    p_hex = format(param_numbers.p, "x").upper()
+    print("\n[green]P: Expected value[/]", len(p_hex) // 2, p_hex, param_numbers.p)
+
+    y_hex = format(public_numbers.y, "x").upper()
+    print("\n[green]Y: Expected value[/]", len(y_hex) // 2, y_hex, public_numbers.y)
+
+    g_hex = format(param_numbers.g, "x").upper()
+    print("\n[green]G: Expected value[/]", len(g_hex) // 2, g_hex, param_numbers.g)
+
+
 if __name__ == "__main__":
     (
         rsa_cert,
         rsa_priv,
         rsa_public,
-        os_priv,
-        os_public,
+        os_rsa_priv,
+        os_rsa_public,
     ) = generate_rsa_keypair_and_certificate()
     rsa_bytes = rsa_cert.public_bytes(serialization.Encoding.DER)
     rsa_priv_bytes = rsa_priv.private_bytes(
@@ -154,7 +184,13 @@ if __name__ == "__main__":
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    dsa_cert, dsa_priv, dsa_public = generate_dsa_keypair_and_certificate()
+    (
+        dsa_cert,
+        dsa_priv,
+        dsa_public,
+        os_dsa_priv,
+        os_dsa_public,
+    ) = generate_dsa_keypair_and_certificate()
     dsa_bytes = dsa_cert.public_bytes(serialization.Encoding.DER)
     dsa_priv_bytes = dsa_priv.private_bytes(
         serialization.Encoding.DER,
@@ -162,7 +198,13 @@ if __name__ == "__main__":
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    ecc_cert, ecc_priv, ecc_public = generate_ecc_keypair_and_certificate()
+    (
+        ecc_cert,
+        ecc_priv,
+        ecc_public,
+        os_ecc_priv,
+        os_ecc_public,
+    ) = generate_ecc_keypair_and_certificate()
     ecc_bytes = ecc_cert.public_bytes(serialization.Encoding.DER)
     ecc_priv_bytes = ecc_priv.private_bytes(
         serialization.Encoding.DER,
@@ -223,9 +265,14 @@ if __name__ == "__main__":
     table.add_row(
         "DSA",
         get_thumbprint(dsa_cert),
-        format(dsa_cert.public_key().public_numbers().y, "x")[:40].upper(),
+        format(dsa_cert.public_key().public_numbers().y, "x").upper(),
     )
     table.add_row("ED448", get_thumbprint(ed448_cert), "")
     print(table)
+
+    dsa_summary(dsa_priv)
+
+    # print(dsa_cert.public_key().public_numbers())
+    # print(dsa_priv.private_numbers().__dict__)
 
     input(f"PID: {os.getpid()} -- Press Enter to continue...")

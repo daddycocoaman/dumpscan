@@ -174,7 +174,7 @@ class Symcrypt(interfaces.plugins.PluginInterface):
                             continue
 
                 # Make the bcrypt_RSA_KEY structure to get the pointer to key
-                bcrypt_rsakey = BCRYPT_RSAKEY.parse(layer.read(offset, 0x28))
+                bcrypt_rsakey = MSCRYPT_RSAKEY.parse(layer.read(offset, 0x28))
 
                 # Parse the key into a SYMCRYPT_RSA_KEY struct
                 # If we can't, just move on
