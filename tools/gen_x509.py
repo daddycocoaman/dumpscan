@@ -2,8 +2,9 @@ import os
 import gc
 from binascii import hexlify
 from datetime import datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
-
+from math import pow
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed448, ed25519, rsa
@@ -167,6 +168,8 @@ def dsa_summary(dsa_private_key: dsa.DSAPrivateKey):
 
     g_hex = format(param_numbers.g, "x").upper()
     print("\n[green]G: Expected value[/]", len(g_hex) // 2, g_hex, param_numbers.g)
+
+    print(param_numbers.g == 2 ** ((param_numbers.p - 1) // param_numbers.q))
 
 
 if __name__ == "__main__":
