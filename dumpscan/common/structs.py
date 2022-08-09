@@ -35,6 +35,11 @@ def divisible_by_1024(obj, ctx):
         raise CancelParsing
 
 
+def divisible_by_128(obj, ctx):
+    if not obj or not obj % 128 == 0:
+        raise CancelParsing
+
+
 def validate_ecc_size(obj, ctx):
     # Since ECC keys have weird sizes, we need to validate them. For example, 521 bits
     # Can have a private key size of 65-66 bytes and a public key size of 130-131 bytes.
@@ -184,7 +189,8 @@ SYMCRYPT_DLGROUP = Struct(
     "eFipsStandard" / Hex(Int32ul),
     "pHashAlgorithm" / Hex(Int64ul),
     "dwGenCounter" / Int32ul,
-    "bIndexGenG" / Int32ul,
+    "bIndexGenG" / Byte,
+    Padding(3),
     "pbQ" / Hex(Int64ul),
     "pmP" / Hex(Int64ul),
     "pmQ" / Hex(Int64ul),
@@ -274,3 +280,17 @@ BCRYPT_ECCPUBLIC = Struct(
 )
 
 BCRYPT_ECCPRIVATE = Struct(*BCRYPT_ECCPUBLIC.subcons, "d" / BytesInteger(this.cbKey))
+
+BCRYPT_DHKEY = Struct(
+    "Magic" / OneOf(Bytes(4), (b"DHPB", b"DHPV")), "cbKey" / Int32ul * divisible_by_128
+)
+
+BCRYPT_DHPUBLIC = Struct(
+    *BCRYPT_DHKEY.subcons,
+    "Modulus" / BytesInteger(this.cbKey),
+    "Generator" / BytesInteger(this.cbKey),
+)
+
+BCRYPT_DHPRIVATE = Struct(
+    *BCRYPT_DHPUBLIC.subcons, "PrivateExponent" / BytesInteger(this.cbKey)
+)

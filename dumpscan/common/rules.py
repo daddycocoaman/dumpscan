@@ -3,7 +3,9 @@ yara_template = "rule {0} {{ strings: $ = {1} condition: any of them}}"
 YARA_RULES = {
     # Locate x509 structures based on ASN.1
     "x509": {
+        # https://datatracker.ietf.org/doc/html/rfc5280#section-4.1
         "x509": yara_template.format("x509", "{30 (81|82) (??|?? ??) 30 (81|82)}"),
+        # https://www.ietf.org/rfc/rfc5208.txt
         "pkcs": yara_template.format("pkcs", "{30 (??|?? ??|?? ?? ??) 02 01 00}"),
     },
     "symcrypt": {
@@ -33,5 +35,7 @@ YARA_RULES = {
         "ecdsa_private_384": yara_template.format("ecdsa_private_384", '"ECS4"'),
         "ecdsa_public_521": yara_template.format("ecdsa_public_521", '"ECS5"'),
         "ecdsa_private_521": yara_template.format("ecdsa_private_521", '"ECS6"'),
+        "dh_public": yara_template.format("dh_public", '"DHPB"'),
+        "dh_private": yara_template.format("dh_private", '"DHPV"'),
     },
 }
