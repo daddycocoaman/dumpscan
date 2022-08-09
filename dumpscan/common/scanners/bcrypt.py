@@ -72,7 +72,7 @@ class BcryptScanner:
         table.add_column("Rule", style="bold italic #f9c300")
         table.add_column("Address")
         table.add_column("Size")
-        table.add_column("Modulus (First 20 bytes)", style="bold #f9c300")
+        table.add_column("Public Bytes (First 20 bytes)", style="bold #f9c300")
         table.add_column("Matching Certificate")
         for rule, objects in self.matching_objects.items():
             for object in objects:
@@ -241,4 +241,70 @@ class BcryptScanner:
         )
 
     def _parse_dsakey(self, match: tuple, rule: str):
-        print(match, rule)
+
+        # This is the offset from the bytes being scanned
+        offset, _, key_type = match
+        physical_address = self.current_section.StartOfMemoryRange + offset
+
+        # Because the structures are different per key type, we need to parse
+        # the data differently. We need to know the integer sizes.
+        try:
+            bcrypt_dsablob = BCRYPT_DSAKEY_V2.parse(
+                self.dump.read_section(self.current_section, offset, 28)
+            )
+        except:
+            return
+
+        if not bcrypt_dsablob:
+            return
+
+        try:
+            match key_type:
+                case b"DPB2":
+                    bcrypt_dsakey = BCRYPT_DSAPUBLIC.parse(
+                        self.dump.read_section(
+                            self.current_section,
+                            offset,
+                            28
+                            + bcrypt_dsablob.cbSeedLength
+                            + bcrypt_dsablob.cbGroupSize
+                            + bcrypt_dsablob.cbKey * 3,
+                        )
+                    )
+                case b"DPV2":
+                    bcrypt_dsakey = BCRYPT_DSAPRIVATE.parse(
+                        self.dump.read_section(
+                            self.current_section,
+                            offset,
+                            28
+                            + bcrypt_dsablob.cbSeedLength
+                            + bcrypt_dsablob.cbGroupSize
+                            + bcrypt_dsablob.cbKey * 3
+                            + bcrypt_dsablob.cbGroupSize,
+                        )
+                    )
+                case _:
+                    return
+        except:
+            return
+
+        mod_str = format(bcrypt_dsakey.Public, "X")
+        matching_cert = None
+        matching_cert_value = ""
+
+        if self.x509:
+            if matching_cert := self.x509.modulus_dict.get(mod_str):
+                thumbprint = (
+                    binascii.hexlify(matching_cert.fingerprint(hashes.SHA1()))
+                    .upper()
+                    .decode()
+                )
+                subject = matching_cert.subject.rfc4514_string()
+                matching_cert_value = f"[green]{thumbprint}[/green] -> {subject}"
+
+        return BcryptResult(
+            hex(physical_address),
+            str(bcrypt_dsablob.cbKey * 8),
+            mod_str[:40],
+            matching_cert_value,
+        )

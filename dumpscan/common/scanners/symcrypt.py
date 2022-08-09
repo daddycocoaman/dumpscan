@@ -75,7 +75,7 @@ class SymcryptScanner:
         table.add_column("Address")
         table.add_column("Size")
         table.add_column("HasPrivateKey")
-        table.add_column("Modulus (First 20 bytes)", style="bold #f9c300")
+        table.add_column("Public Bytes (First 20 bytes)", style="bold #f9c300")
         table.add_column("Matching Certificate")
         for rule, objects in self.matching_objects.items():
             for object in objects:

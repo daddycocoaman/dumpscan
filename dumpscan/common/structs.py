@@ -3,10 +3,12 @@ from construct import (
 )
 from construct import (
     Array,
+    Byte,
     Bytes,
     BytesInteger,
     CancelParsing,
     Const,
+    Enum,
     ExprSymmetricAdapter,
     Flag,
     Hex,
@@ -196,4 +198,28 @@ BCRYPT_RSAFULLPRIVATE = Struct(
     "Exponent2" / BytesInteger(this.cbPrime2),
     "Coefficient" / BytesInteger(this.cbPrime1),
     "PrivateExponent" / BytesInteger(this.cbModulus),
+)
+
+# https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/ns-bcrypt-bcrypt_dsa_key_blob_v2
+BCRYPT_DSAKEY_V2 = Struct(
+    "Magic" / OneOf(Bytes(4), (b"DPB2", b"DPV2")),
+    "cbKey" / Int32ul,
+    "HashAlgorithm" / Enum(Int32ul, SHA1=0, SHA256=1, SHA512=2),
+    "DSAFipsVersion" / Int32ul,
+    "cbSeedLength" / Int32ul,
+    "cbGroupSize" / Const(32, Int32ul),  # q is 32 bytes long.
+    "Count" / Byte[4],
+)
+
+BCRYPT_DSAPUBLIC = Struct(
+    *BCRYPT_DSAKEY_V2.subcons,
+    "Seed" / BytesInteger(this.cbSeedLength),
+    "q" / BytesInteger(this.cbGroupSize),
+    "Modulus" / BytesInteger(this.cbKey),
+    "Generator" / BytesInteger(this.cbKey),
+    "Public" / BytesInteger(this.cbKey),
+)
+
+BCRYPT_DSAPRIVATE = Struct(
+    *BCRYPT_DSAPUBLIC.subcons, "PrivateExponent" / BytesInteger(this.cbGroupSize)
 )

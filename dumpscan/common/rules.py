@@ -19,5 +19,7 @@ YARA_RULES = {
         "rsa_public": yara_template.format("rsa_public", '"RSA1"'),
         "rsa_private": yara_template.format("rsa_private", '"RSA2"'),
         "rsa_fullprivate": yara_template.format("rsa_fullprivate", '"RSA3"'),
+        "dsa_public_v2": yara_template.format("dsa_public_v2", '"DPB2"'),
+        "dsa_private_v2": yara_template.format("dsa_private_v2", '"DPV2"'),
     },
 }
