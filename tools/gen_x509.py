@@ -89,8 +89,8 @@ def generate_rsa_keypair_and_certificate():
     )
 
 
-def generate_dsa_keypair_and_certificate():
-    os_dsa_public, os_dsa_private = asymmetric.generate_pair("dsa", 2048)
+def generate_dsa_keypair_and_certificate(size: int):
+    os_dsa_public, os_dsa_private = asymmetric.generate_pair("dsa", size)
     dsa_private_key = serialization.load_pem_private_key(
         asymmetric.dump_private_key(os_dsa_private.asn1, None),
         None,
@@ -160,7 +160,7 @@ def get_thumbprint(certificate: Certificate) -> str:
 def dsa_summary(dsa_private_key: dsa.DSAPrivateKey):
     public_numbers = dsa_private_key.public_key().public_numbers()
     param_numbers = dsa_private_key.public_key().parameters().parameter_numbers()
-    print(dsa_public.public_numbers())
+    print(dsa_v2_public.public_numbers())
 
     q_hex = format(param_numbers.q, "x").upper()
     print("\n[green]Q: Expected value[/]", len(q_hex) // 2, q_hex, param_numbers.q)
@@ -202,19 +202,34 @@ if __name__ == "__main__":
     dump("python_rsa.dmp")
 
     (
-        dsa_cert,
-        dsa_priv,
-        dsa_public,
-        os_dsa_priv,
-        os_dsa_public,
-    ) = generate_dsa_keypair_and_certificate()
-    dsa_bytes = dsa_cert.public_bytes(serialization.Encoding.DER)
-    dsa_priv_bytes = dsa_priv.private_bytes(
+        dsa_v1_cert,
+        dsa_v1_priv,
+        dsa_v1_public,
+        os_dsa_v1_priv,
+        os_dsa_v1_public,
+    ) = generate_dsa_keypair_and_certificate(1024)
+    dsa_v1_bytes = dsa_v1_cert.public_bytes(serialization.Encoding.DER)
+    dsa_v1_priv_bytes = dsa_v1_priv.private_bytes(
         serialization.Encoding.DER,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    dump("python_dsa.dmp")
+    dump("python_dsav1.dmp")
+
+    (
+        dsa_v2_cert,
+        dsa_v2_priv,
+        dsa_v2_public,
+        os_dsa_v2_priv,
+        os_dsa_v2_public,
+    ) = generate_dsa_keypair_and_certificate(3072)
+    dsa_v2_bytes = dsa_v2_cert.public_bytes(serialization.Encoding.DER)
+    dsa_v2_priv_bytes = dsa_v2_priv.private_bytes(
+        serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    dump("python_dsav2.dmp")
 
     (
         ecc_cert,
@@ -260,9 +275,13 @@ if __name__ == "__main__":
     print("RSA Public", len(rsa_bytes), hexlify(rsa_bytes))
     print("RSA Private", len(rsa_priv_bytes), hexlify(rsa_priv_bytes))
 
-    print(Rule("DSA"))
-    print("DSA", len(dsa_bytes), hexlify(dsa_bytes))
-    print("DSA Private", len(dsa_priv_bytes), hexlify(dsa_priv_bytes))
+    print(Rule("DSA v1"))
+    print("DSA v1", len(dsa_v1_bytes), hexlify(dsa_v1_bytes))
+    print("DSA v1 Private", len(dsa_v1_priv_bytes), hexlify(dsa_v1_priv_bytes))
+
+    print(Rule("DSA v2"))
+    print("DSA v2", len(dsa_v2_bytes), hexlify(dsa_v2_bytes))
+    print("DSA v2 Private", len(dsa_v2_priv_bytes), hexlify(dsa_v2_priv_bytes))
 
     print(Rule("ECC"))
     print("ECC", len(ecc_bytes), hexlify(ecc_bytes))
@@ -285,7 +304,7 @@ if __name__ == "__main__":
     table.add_row(
         "RSA",
         get_thumbprint(rsa_cert),
-        format(rsa_cert.public_key().public_numbers().n, "x")[:40].upper(),
+        format(rsa_cert.public_key().public_numbers().n, "X")[:40],
     )
     table.add_row(
         "ECC",
@@ -293,9 +312,14 @@ if __name__ == "__main__":
         f"X:{str(ecc_cert.public_key().public_numbers().x)[:40]} | Y:{str(ecc_cert.public_key().public_numbers().y)[:40]} ",
     )
     table.add_row(
-        "DSA",
-        get_thumbprint(dsa_cert),
-        format(dsa_cert.public_key().public_numbers().y, "x").upper(),
+        "DSA v1",
+        get_thumbprint(dsa_v1_cert),
+        format(dsa_v1_cert.public_key().public_numbers().y, "X"),
+    )
+    table.add_row(
+        "DSA v2",
+        get_thumbprint(dsa_v2_cert),
+        format(dsa_v2_cert.public_key().public_numbers().y, "X"),
     )
     table.add_row("ED25519", get_thumbprint(ed25519_cert), "")
     table.add_row("ED448", get_thumbprint(ed448_cert), "")
