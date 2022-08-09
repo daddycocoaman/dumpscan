@@ -14,4 +14,10 @@ YARA_RULES = {
         # Locate ECC structs following "MSKY" magic header
         "ecc": yara_template.format("ecc", "{28 00 00 00 59 4b 53 4d}"),
     },
+    # https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/ns-bcrypt-bcrypt_rsakey_blob
+    "bcrypt": {
+        "rsa_public": yara_template.format("rsa_public", '"RSA1"'),
+        "rsa_private": yara_template.format("rsa_private", '"RSA2"'),
+        "rsa_fullprivate": yara_template.format("rsa_fullprivate", '"RSA3"'),
+    },
 }

@@ -1,21 +1,35 @@
 from construct import (
+    Padding,  # We use Padding to fill up the space between the fields that are unknown.
+)
+from construct import (
     Array,
+    Bytes,
+    BytesInteger,
+    CancelParsing,
+    Const,
     ExprSymmetricAdapter,
     Flag,
-    Const,
     Hex,
     Int32ul,
     Int64ul,
+    OneOf,
     Struct,
     Union,
     this,
-    Padding,  # We use Padding to fill up the space between the fields that are unknown.
 )
 
 ################################################################################
 ### ALIAS ###
 ################################################################################
 Int32ulFlag = ExprSymmetricAdapter(Int32ul, lambda obj, ctx: bool(obj))
+
+################################################################################
+### CONDITIONS ###
+################################################################################
+def divisible_by_1024(obj, ctx):
+    if not obj or not obj % 1024 == 0:
+        raise CancelParsing
+
 
 ################################################################################
 ### COMMON STRUCTS ###
@@ -29,7 +43,7 @@ SYMCRYPT_INT = Struct(
     "cbSize" / Int32ul,
     "magic" / Hex(Int64ul),
     Padding(12),
-    "fdef" / Array((this.cbSize - 0x20) // 4, Hex(Int32ul)),
+    "fdef" / BytesInteger(this.cbSize - 0x20, swapped=True),
 )
 
 SYMCRYPT_DIVISOR = Struct(
@@ -149,4 +163,37 @@ SYMCRYPT_DLKEY = Struct(
     "pbPrivate" / Hex(Int64ul),
     "pePublicKey" / Hex(Int64ul),
     "piPrivateKey" / Hex(Int64ul),
+)
+
+################################################################################
+### BCrypt STRUCTS ###
+################################################################################
+
+BCRYPT_RSAKEY = Struct(
+    "Magic" / OneOf(Bytes(4), (b"RSA1", b"RSA2", b"RSA3")),
+    "BitLength" / Int32ul * divisible_by_1024,
+    "cbPublicExp" / Int32ul,
+    "cbModulus" / Int32ul,
+    "cbPrime1" / Int32ul,
+    "cbPrime2" / Int32ul,
+)
+
+BCRYPT_RSAPUBLIC = Struct(
+    *BCRYPT_RSAKEY.subcons,
+    "PublicExponent" / BytesInteger(this.cbPublicExp),
+    "Modulus" / BytesInteger(this.cbModulus),
+)
+
+BCRYPT_RSAPRIVATE = Struct(
+    *BCRYPT_RSAPUBLIC.subcons,
+    "Prime1" / BytesInteger(this.cbPrime1),
+    "Prime2" / BytesInteger(this.cbPrime2),
+)
+
+BCRYPT_RSAFULLPRIVATE = Struct(
+    *BCRYPT_RSAPRIVATE.subcons,
+    "Exponent1" / BytesInteger(this.cbPrime1),
+    "Exponent2" / BytesInteger(this.cbPrime2),
+    "Coefficient" / BytesInteger(this.cbPrime1),
+    "PrivateExponent" / BytesInteger(this.cbModulus),
 )

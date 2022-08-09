@@ -5,6 +5,7 @@ import typer
 from rich import inspect
 
 from .common.output import get_dumpscan_console, get_dumpscan_table
+from .common.scanners.bcrypt import BcryptScanner
 from .common.scanners.symcrypt import SymcryptScanner
 from .common.scanners.x509 import x509Scanner
 from .kernel.renderers import RichRenderOption
@@ -207,6 +208,25 @@ def minidump_symcrypt(
     symcrypt_scanner = SymcryptScanner.minidump_scan(
         minidump_file, x509_scanner, output
     )
+    console.print(symcrypt_scanner)
+
+
+@minidump_app.command(name="bcrypt", help="Scan a minidump for bcrypt objects")
+def minidump_bcrypt(
+    file: Path = typer.Option(
+        ..., "--file", "-f", help="Path to kernel dump", dir_okay=False
+    ),
+    output: Path = typer.Option(
+        None, "--output", "-o", help="Path to dump objects to disk", file_okay=False
+    ),
+):
+
+    # Get all the public certs first
+    minidump_file = MinidumpFile(file.absolute())
+    x509_scanner = x509Scanner.minidump_scan(minidump_file, None)
+
+    # Now look for bcrypt
+    symcrypt_scanner = BcryptScanner.minidump_scan(minidump_file, x509_scanner, output)
     console.print(symcrypt_scanner)
 
 

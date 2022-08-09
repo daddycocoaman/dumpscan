@@ -1,10 +1,10 @@
 import logging
 import warnings
 
-from typer import rich_utils
 from cryptography.utils import CryptographyDeprecationWarning
 from rich import traceback
 from rich.logging import RichHandler
+from typer import rich_utils
 
 warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
 traceback.install(show_locals=True)

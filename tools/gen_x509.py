@@ -1,10 +1,11 @@
-import os
 import gc
+import os
 from binascii import hexlify
 from datetime import datetime, timedelta
 from decimal import Decimal
-from pathlib import Path
 from math import pow
+from pathlib import Path
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed448, ed25519, rsa
@@ -67,7 +68,7 @@ def create_certificate(
 
 
 def generate_rsa_keypair_and_certificate():
-    os_rsa_public, os_rsa_private = asymmetric.generate_pair("rsa", 2048)
+    os_rsa_public, os_rsa_private = asymmetric.generate_pair("rsa", 4096)
 
     rsa_private_key = serialization.load_pem_private_key(
         asymmetric.dump_private_key(os_rsa_private.asn1, None),
@@ -168,8 +169,6 @@ def dsa_summary(dsa_private_key: dsa.DSAPrivateKey):
 
     g_hex = format(param_numbers.g, "x").upper()
     print("\n[green]G: Expected value[/]", len(g_hex) // 2, g_hex, param_numbers.g)
-
-    print(param_numbers.g == 2 ** ((param_numbers.p - 1) // param_numbers.q))
 
 
 if __name__ == "__main__":
