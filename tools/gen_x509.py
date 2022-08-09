@@ -124,6 +124,8 @@ def generate_ecc_keypair_and_certificate():
     )
 
     ecc_certificate = create_certificate(ecc_private_key, ecc_public_key)
+    dump("python_postecc.dmp")
+
     return (
         ecc_certificate,
         ecc_private_key,
@@ -169,6 +171,16 @@ def dsa_summary(dsa_private_key: dsa.DSAPrivateKey):
 
     g_hex = format(param_numbers.g, "x").upper()
     print("\n[green]G: Expected value[/]", len(g_hex) // 2, g_hex, param_numbers.g)
+
+
+def ecc_summary(
+    ecc_public: ec.EllipticCurvePublicKey,
+    ecc_private: ec.EllipticCurvePrivateKey,
+):
+    public_numbers = ecc_public.public_numbers()
+    priv_numbers = ecc_private.private_numbers()
+    print(public_numbers)
+    print(priv_numbers.private_value)
 
 
 if __name__ == "__main__":
@@ -222,13 +234,13 @@ if __name__ == "__main__":
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    ed448_priv, ed448_cert = generate_ed448_keypair_and_certificate()
-    ed448_bytes = ed448_cert.public_bytes(serialization.Encoding.DER)
-    ed448_priv_bytes = ed448_priv.private_bytes(
-        serialization.Encoding.DER,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption(),
-    )
+    # ed448_priv, ed448_cert = generate_ed448_keypair_and_certificate()
+    # ed448_bytes = ed448_cert.public_bytes(serialization.Encoding.DER)
+    # ed448_priv_bytes = ed448_priv.private_bytes(
+    #     serialization.Encoding.DER,
+    #     format=serialization.PrivateFormat.PKCS8,
+    #     encryption_algorithm=serialization.NoEncryption(),
+    # )
 
     dump("python_x509.DMP")
 
@@ -248,9 +260,9 @@ if __name__ == "__main__":
     print("ED25519", hexlify(ed25519_bytes))
     print("ED25519 Private", len(ed25519_priv_bytes), hexlify(ed25519_priv_bytes))
 
-    print(Rule("ED448"))
-    print("ED448", hexlify(ed448_bytes))
-    print("ED448 Private", len(ed448_priv_bytes), hexlify(ed448_priv_bytes))
+    # print(Rule("ED448"))
+    # print("ED448", hexlify(ed448_bytes))
+    # print("ED448 Private", len(ed448_priv_bytes), hexlify(ed448_priv_bytes))
 
     table = Table("Type", "Thumbprint", "Public Integers")
     table.add_row(
@@ -263,17 +275,18 @@ if __name__ == "__main__":
         get_thumbprint(ecc_cert),
         f"X:{str(ecc_cert.public_key().public_numbers().x)[:40]} | Y:{str(ecc_cert.public_key().public_numbers().y)[:40]} ",
     )
-    table.add_row("ED25519", get_thumbprint(ed25519_cert), "")
     table.add_row(
         "DSA",
         get_thumbprint(dsa_cert),
         format(dsa_cert.public_key().public_numbers().y, "x").upper(),
     )
-    table.add_row("ED448", get_thumbprint(ed448_cert), "")
+    table.add_row("ED25519", get_thumbprint(ed25519_cert), "")
+
+    # table.add_row("ED448", get_thumbprint(ed448_cert), "")
     print(table)
 
-    dsa_summary(dsa_priv)
-
+    # dsa_summary(dsa_priv)
+    ecc_summary(ecc_public, ecc_priv)
     # print(dsa_cert.public_key().public_numbers())
     # print(dsa_priv.private_numbers().__dict__)
 

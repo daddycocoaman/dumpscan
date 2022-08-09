@@ -99,10 +99,15 @@ class BcryptScanner:
         rule = data["rule"]
         matching_objects = []
 
-        if rule.startswith("rsa_"):
-            parse_func = self._parse_rsakey
-        elif rule.startswith("dsa_"):
-            parse_func = self._parse_dsakey
+        match rule.split("_")[0]:
+            case "rsa":
+                parse_func = self._parse_rsakey
+            case "dsa":
+                parse_func = self._parse_dsakey
+            case "ecdh" | "ecdsa":
+                parse_func = self._parse_ecckey
+            case _:
+                return
 
         if parse_func:
             for match in data["strings"]:
@@ -306,5 +311,63 @@ class BcryptScanner:
             hex(physical_address),
             str(bcrypt_dsablob.cbKey * 8),
             mod_str[:40],
+            matching_cert_value,
+        )
+
+    def _parse_ecckey(self, match: tuple, rule: str):
+
+        # This is the offset from the bytes being scanned
+        offset, _, key_type = match
+        physical_address = self.current_section.StartOfMemoryRange + offset
+
+        # Because the structures are different per key type, we need to parse
+        # the data differently. We need to know the integer sizes.
+        try:
+            bcrypt_eccblob = BCRYPT_ECCKEY.parse(
+                self.dump.read_section(self.current_section, offset, 8)
+            )
+        except:
+            return
+
+        if not bcrypt_eccblob:
+            return
+
+        try:
+            match rule.split("_")[1]:
+                case "public":
+                    bcrypt_ecckey = BCRYPT_ECCPUBLIC.parse(
+                        self.dump.read_section(
+                            self.current_section, offset, 8 + bcrypt_eccblob.cbKey * 2
+                        )
+                    )
+                case "private":
+                    bcrypt_ecckey = BCRYPT_ECCPRIVATE.parse(
+                        self.dump.read_section(
+                            self.current_section, offset, 8 + bcrypt_eccblob.cbKey * 3
+                        )
+                    )
+                case _:
+                    return
+        except:
+            return
+
+        public_ints = (format(bcrypt_ecckey.X, "X"), format(bcrypt_ecckey.Y, "X"))
+        matching_cert = None
+        matching_cert_value = ""
+
+        if self.x509:
+            if matching_cert := self.x509.modulus_dict.get(public_ints):
+                thumbprint = (
+                    binascii.hexlify(matching_cert.fingerprint(hashes.SHA1()))
+                    .upper()
+                    .decode()
+                )
+                subject = matching_cert.subject.rfc4514_string()
+                matching_cert_value = f"[green]{thumbprint}[/green] -> {subject}"
+
+        return BcryptResult(
+            hex(physical_address),
+            rule.split("_")[2].strip("P"),
+            f"X: {public_ints[0][:40]} | Y: {public_ints[1][:40]}",
             matching_cert_value,
         )

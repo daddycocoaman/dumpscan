@@ -77,19 +77,15 @@ class x509Scanner:
             key_type = ""
 
             if isinstance(public_key, RSAPublicKey):
-                pubints = (
-                    "N: " + format(public_key.public_numbers().n, "x")[:40].upper()
-                )
+                pubints = "N: " + format(public_key.public_numbers().n, "X")[:40]
                 key_type = "RSA"
 
             elif isinstance(public_key, EllipticCurvePublicKey):
-                pubints = f"X: {format(public_key.public_numbers().x, 'x')[:40].upper()} | Y: {format(public_key.public_numbers().y, 'x')[:40].upper()}"
+                pubints = f"X: {format(public_key.public_numbers().x, 'X')[:40]} | Y: {format(public_key.public_numbers().y, 'X')[:40]}"
                 key_type = "ECC"
 
             elif isinstance(public_key, DSAPublicKey):
-                pubints = (
-                    "Y: " + format(public_key.public_numbers().y, "x")[:40].upper()
-                )
+                pubints = "Y: " + format(public_key.public_numbers().y, "X")[:40]
                 key_type = "DSA"
             elif isinstance(public_key, Ed448PublicKey):
                 pubints = ""
@@ -120,7 +116,7 @@ class x509Scanner:
             if isinstance(value, RSAPrivateKey):
                 result = str(value.key_size)
                 thumbprint, cert_subject = self.match_priv_pub_ints(
-                    format(value.private_numbers().public_numbers.n, "x").upper()
+                    format(value.private_numbers().public_numbers.n, "X")
                 )
 
                 table.add_row(rule, "RSA", result, thumbprint, cert_subject)
@@ -128,7 +124,7 @@ class x509Scanner:
             elif isinstance(value, DSAPrivateKey):
                 result = str(value.key_size)
                 thumbprint, cert_subject = self.match_priv_pub_ints(
-                    format(value.private_numbers().public_numbers.y, "x").upper()
+                    format(value.private_numbers().public_numbers.y, "X")
                 )
                 table.add_row(rule, "DSA", result, thumbprint, cert_subject)
 
@@ -136,8 +132,8 @@ class x509Scanner:
                 result = str(value.key_size)
                 thumbprint, cert_subject = self.match_priv_pub_ints(
                     (
-                        format(value.private_numbers().public_numbers.x, "x").upper(),
-                        format(value.private_numbers().public_numbers.y, "x").upper(),
+                        format(value.private_numbers().public_numbers.x, "X"),
+                        format(value.private_numbers().public_numbers.y, "X"),
                     )
                 )
                 table.add_row(rule, "ECC", result, thumbprint, cert_subject)
@@ -209,14 +205,14 @@ class x509Scanner:
             public_int = None
 
             if isinstance(public_key, RSAPublicKey):
-                public_int = format(public_key.public_numbers().n, "x").upper()
+                public_int = format(public_key.public_numbers().n, "X")
             elif isinstance(public_key, EllipticCurvePublicKey):
                 public_int = (
-                    format(public_key.public_numbers().x, "x").upper(),
-                    format(public_key.public_numbers().y, "x").upper(),
+                    format(public_key.public_numbers().x, "X"),
+                    format(public_key.public_numbers().y, "X"),
                 )
             elif isinstance(public_key, DSAPublicKey):
-                public_int = format(public_key.public_numbers().y, "x").upper()
+                public_int = format(public_key.public_numbers().y, "X")
 
             if public_int:
                 scanner.modulus_dict[public_int] = cert
@@ -227,21 +223,21 @@ class x509Scanner:
 
                 if isinstance(private_key, RSAPrivateKey):
                     priv_str = format(
-                        private_key.private_numbers().public_numbers.n, "x"
+                        private_key.private_numbers().public_numbers.n, "X"
                     )
                 elif isinstance(private_key, EllipticCurvePrivateKey):
                     priv_str = (
-                        format(private_key.private_numbers().public_numbers.x, "x"),
-                        format(private_key.private_numbers().public_numbers.y, "x"),
+                        format(private_key.private_numbers().public_numbers.x, "X"),
+                        format(private_key.private_numbers().public_numbers.y, "X"),
                     )
                 elif isinstance(private_key, DSAPrivateKey):
                     priv_str = format(
-                        private_key.private_numbers().public_numbers.y, "x"
+                        private_key.private_numbers().public_numbers.y, "X"
                     )
 
                 if priv_str:
                     if match := scanner.modulus_dict.get(priv_str):
-                        scanner.public_private_matches[private_key, match]
+                        scanner.public_private_matches[private_key] = match
 
         return scanner
 

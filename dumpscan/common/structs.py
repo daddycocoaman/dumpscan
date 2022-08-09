@@ -1,3 +1,5 @@
+from enum import IntEnum
+from math import ceil, floor
 from construct import (
     Padding,  # We use Padding to fill up the space between the fields that are unknown.
 )
@@ -31,6 +33,41 @@ Int32ulFlag = ExprSymmetricAdapter(Int32ul, lambda obj, ctx: bool(obj))
 def divisible_by_1024(obj, ctx):
     if not obj or not obj % 1024 == 0:
         raise CancelParsing
+
+
+def validate_ecc_size(obj, ctx):
+    # Since ECC keys have weird sizes, we need to validate them. For example, 521 bits
+    # Can have a private key size of 65-66 bytes and a public key size of 130-131 bytes.
+    # So we check if the byte size is between the floor and ceiling of the expected size.
+    if not obj:
+        raise CancelParsing
+
+    key_type, _, size, _ = str(ctx.Magic).split("_")
+    size = int(size.strip("P"))
+    byte_size = size // 8
+
+    if not floor(byte_size) <= obj <= ceil(byte_size):
+        raise CancelParsing
+
+
+################################################################################
+### ENUMS ###
+################################################################################
+
+
+class ECC_MAGIC(IntEnum):
+    ECDH_PUBLIC_P256_MAGIC = 0x314B4345
+    ECDH_PRIVATE_P256_MAGIC = 0x324B4345
+    ECDH_PUBLIC_P384_MAGIC = 0x334B4345
+    ECDH_PRIVATE_P384_MAGIC = 0x344B4345
+    ECDH_PUBLIC_P521_MAGIC = 0x354B4345
+    ECDH_PRIVATE_P521_MAGIC = 0x364B4345
+    ECDSA_PUBLIC_P256_MAGIC = 0x31534345
+    ECDSA_PRIVATE_P256_MAGIC = 0x32534345
+    ECDSA_PUBLIC_P384_MAGIC = 0x33534345
+    ECDSA_PRIVATE_P384_MAGIC = 0x34534345
+    ECDSA_PUBLIC_P521_MAGIC = 0x35534345
+    ECDSA_PRIVATE_P521_MAGIC = 0x36534345
 
 
 ################################################################################
@@ -223,3 +260,17 @@ BCRYPT_DSAPUBLIC = Struct(
 BCRYPT_DSAPRIVATE = Struct(
     *BCRYPT_DSAPUBLIC.subcons, "PrivateExponent" / BytesInteger(this.cbGroupSize)
 )
+
+# https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/ns-bcrypt-bcrypt_ecckey_blob
+
+BCRYPT_ECCKEY = Struct(
+    "Magic" / Enum(Int32ul, ECC_MAGIC), "cbKey" / Int32ul * validate_ecc_size
+)
+
+BCRYPT_ECCPUBLIC = Struct(
+    *BCRYPT_ECCKEY.subcons,
+    "X" / BytesInteger(this.cbKey),
+    "Y" / BytesInteger(this.cbKey),
+)
+
+BCRYPT_ECCPRIVATE = Struct(*BCRYPT_ECCPUBLIC.subcons, "d" / BytesInteger(this.cbKey))
