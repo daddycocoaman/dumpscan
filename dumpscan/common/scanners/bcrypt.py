@@ -254,9 +254,14 @@ class BcryptScanner:
         # Because the structures are different per key type, we need to parse
         # the data differently. We need to know the integer sizes.
         try:
-            bcrypt_dsablob = BCRYPT_DSAKEY_V2.parse(
-                self.dump.read_section(self.current_section, offset, 28)
-            )
+            if rule.endswith("v1"):
+                bcrypt_dsablob = BCRYPT_DSAKEY_V1.parse(
+                    self.dump.read_section(self.current_section, offset, 52)
+                )
+            else:
+                bcrypt_dsablob = BCRYPT_DSAKEY_V2.parse(
+                    self.dump.read_section(self.current_section, offset, 28)
+                )
         except:
             return
 
@@ -265,8 +270,24 @@ class BcryptScanner:
 
         try:
             match key_type:
+                case b"DSPB":
+                    bcrypt_dsakey = BCRYPT_DSAPUBLIC_V1.parse(
+                        self.dump.read_section(
+                            self.current_section,
+                            offset,
+                            52 + bcrypt_dsablob.cbKey * 3,
+                        )
+                    )
+                case b"DSPV":
+                    bcrypt_dsakey = BCRYPT_DSAPRIVATE_V1.parse(
+                        self.dump.read_section(
+                            self.current_section,
+                            offset,
+                            52 + bcrypt_dsablob.cbKey * 3 + 20,
+                        )
+                    )
                 case b"DPB2":
-                    bcrypt_dsakey = BCRYPT_DSAPUBLIC.parse(
+                    bcrypt_dsakey = BCRYPT_DSAPUBLIC_V2.parse(
                         self.dump.read_section(
                             self.current_section,
                             offset,
@@ -277,7 +298,7 @@ class BcryptScanner:
                         )
                     )
                 case b"DPV2":
-                    bcrypt_dsakey = BCRYPT_DSAPRIVATE.parse(
+                    bcrypt_dsakey = BCRYPT_DSAPRIVATE_V2.parse(
                         self.dump.read_section(
                             self.current_section,
                             offset,

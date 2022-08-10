@@ -2,7 +2,6 @@ import gc
 import os
 from binascii import hexlify
 from datetime import datetime, timedelta
-from decimal import Decimal
 from math import pow
 from pathlib import Path
 
@@ -42,7 +41,7 @@ def dump(filename: str):
     create_dump(
         os.getpid(),
         (Path(__file__).parents[1] / "samples" / filename).resolve().as_posix(),
-        MINIDUMP_TYPE.MiniDumpNormal | MINIDUMP_TYPE.MiniDumpWithFullMemory,
+        MINIDUMP_TYPE.MiniDumpWithFullMemory,
     )
 
 
@@ -80,6 +79,8 @@ def generate_rsa_keypair_and_certificate():
     )
 
     rsa_certificate = create_certificate(rsa_private_key, rsa_public_key)
+    dump("python_rsa.dmp")
+
     return (
         rsa_certificate,
         rsa_private_key,
@@ -101,6 +102,8 @@ def generate_dsa_keypair_and_certificate(size: int):
     )
 
     dsa_certificate = create_certificate(dsa_private_key, dsa_public_key)
+    dump(f"python_dsa_{size}.dmp")
+
     return (
         dsa_certificate,
         dsa_private_key,
@@ -123,6 +126,7 @@ def generate_ecc_keypair_and_certificate():
     )
 
     ecc_certificate = create_certificate(ecc_private_key, ecc_public_key)
+    dump("python_ecc.dmp")
 
     return (
         ecc_certificate,
@@ -137,8 +141,13 @@ def generate_ed25519_keypair_and_certificate():
     ed25519_private_key = ed25519.Ed25519PrivateKey.generate()
     ed25519_public_key = ed25519_private_key.public_key()
 
+    ed25519_cert = create_certificate(
+        ed25519_private_key, ed25519_public_key, algorithm=None
+    )
+    dump("python_ed25519.dmp")
+
     return (
-        create_certificate(ed25519_private_key, ed25519_public_key, algorithm=None),
+        ed25519_cert,
         ed25519_private_key,
         ed25519_public_key,
     )
@@ -148,9 +157,9 @@ def generate_ed448_keypair_and_certificate():
     ed448_private_key = ed448.Ed448PrivateKey.generate()
     ed448_public_key = ed448_private_key.public_key()
 
-    return ed448_private_key, create_certificate(
-        ed448_private_key, ed448_public_key, algorithm=None
-    )
+    ed448_cert = create_certificate(ed448_private_key, ed448_public_key, algorithm=None)
+    dump("python_ed448.dmp")
+    return (ed448_cert, ed448_private_key, ed448_public_key)
 
 
 def get_thumbprint(certificate: Certificate) -> str:
@@ -199,7 +208,6 @@ if __name__ == "__main__":
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    dump("python_rsa.dmp")
 
     (
         dsa_v1_cert,
@@ -214,7 +222,6 @@ if __name__ == "__main__":
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    dump("python_dsav1.dmp")
 
     (
         dsa_v2_cert,
@@ -229,7 +236,6 @@ if __name__ == "__main__":
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    dump("python_dsav2.dmp")
 
     (
         ecc_cert,
@@ -244,7 +250,6 @@ if __name__ == "__main__":
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    dump("python_ecc.dmp")
 
     (
         ed25519_cert,
@@ -258,16 +263,14 @@ if __name__ == "__main__":
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    dump("python_ed25519.dmp")
 
-    ed448_priv, ed448_cert = generate_ed448_keypair_and_certificate()
+    ed448_cert, ed448_priv, ed448_public = generate_ed448_keypair_and_certificate()
     ed448_bytes = ed448_cert.public_bytes(serialization.Encoding.DER)
     ed448_priv_bytes = ed448_priv.private_bytes(
         serialization.Encoding.DER,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     )
-    dump("python_ed448.dmp")
 
     dump("python_x509.dmp")
 
@@ -325,7 +328,11 @@ if __name__ == "__main__":
     table.add_row("ED448", get_thumbprint(ed448_cert), "")
     print(table)
 
-    # dsa_summary(dsa_priv)
-    # ecc_summary(ecc_public, ecc_priv)
+    dsa_summary(dsa_v1_priv)
+    dsa_summary(dsa_v2_priv)
+    ecc_summary(ecc_public, ecc_priv)
 
     input(f"PID: {os.getpid()} -- Press Enter to continue...")
+    print(hex(id(os_rsa_priv)), hex(id(os_rsa_public)))
+    print(hex(id(os_dsa_v1_priv)), hex(id(os_dsa_v1_public)))
+    print(hex(id(os_dsa_v2_priv)), hex(id(os_dsa_v2_public)))
