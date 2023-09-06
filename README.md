@@ -1,3 +1,4 @@
+# Public development on this tool has been paused but is still being worked on privately. Expect a massive update Q3/Q4 2024. 
 
 <p align="center">
   <img width="500" height="500" src="https://raw.githubusercontent.com/daddycocoaman/dumpscan/main/docs/dumpscan.png">
